@@ -47,6 +47,7 @@ def bfs_paths(state, start, goal,successors):
             explored.add(state)
             for state,action in successors(state).items():
                 if isgoal(state):
+                    print('explored states: {}'.format(len(explored)))
                     return path + [action]
                 else:
                     queue.append((state, path + [action]))
@@ -57,7 +58,9 @@ def astar(startstate,goal,successors,heuristic):
     existing_costs = {startstate:0}
     while frontier:
         fcost,state = heappop(frontier)
-        if isgoal(state): return construct_path(state,startstate,parentmap)
+        if isgoal(state): 
+            print('explored states: {}'.format(len(parentmap)))
+            return construct_path(state,startstate,parentmap)
         for newstate,action in successors(state).items():
             new_gcost = 1 + existing_costs[state]
             if newstate not in parentmap or existing_costs[newstate] > new_gcost:
@@ -156,7 +159,7 @@ def no_conflict(items_moving,neighboritems):
         return all(c[0] + 'G' in combined_floor for c in chips)
     return True
 
-# path = bfs_paths(state2,'F1',isgoal,successors)
+# path = bfs_paths(state1,'F1',isgoal,successors)
 # print(len(path)-1)
 # import cProfile
 # cProfile.run('astar(state1, isgoal, successors, distance)')
