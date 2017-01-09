@@ -1,20 +1,22 @@
 import re
 import itertools
 from collections import namedtuple,defaultdict
-# NODES  = open('AoC22.txt').read().split('\n')[2:]
-NODES = """/dev/grid/node-x0-y0   10T    8T     2T   80%
-/dev/grid/node-x0-y1   11T    6T     5T   54%
-/dev/grid/node-x0-y2   32T   28T     4T   87%
-/dev/grid/node-x1-y0    9T    7T     2T   77%
-/dev/grid/node-x1-y1    8T    0T     8T    0%
-/dev/grid/node-x1-y2   11T    7T     4T   63%
-/dev/grid/node-x2-y0   10T    6T     4T   60%
-/dev/grid/node-x2-y1    9T    8T     1T   88%
-/dev/grid/node-x2-y2    9T    6T     3T   66%""".split('\n')
+from heapq import heappush,heappop
+
+NODES  = open('AoC22.txt').read().split('\n')[2:]
+# NODES = """/dev/grid/node-x0-y0   10T    8T     2T   80%
+# /dev/grid/node-x0-y1   11T    6T     5T   54%
+# /dev/grid/node-x0-y2   32T   28T     4T   87%
+# /dev/grid/node-x1-y0    9T    7T     2T   77%
+# /dev/grid/node-x1-y1    8T    0T     8T    0%
+# /dev/grid/node-x1-y2   11T    7T     4T   63%
+# /dev/grid/node-x2-y0   10T    6T     4T   60%
+# /dev/grid/node-x2-y1    9T    8T     1T   88%
+# /dev/grid/node-x2-y2    9T    6T     3T   66%""".split('\n')
 
 Node = namedtuple('Node',['x','y','size','used_tb','avail','used_pct','isgoal'])
 
-def make_node(text,goalcoords=(2,0)):
+def make_node(text,goalcoords=(29,0)):#29,0 actual | 2,0 test
 	x,y = map(lambda x: int(x[1:]),re.findall('[xy]\d+',text))
 	rest = ' '.join(text.split()[1:])
 	rest_nums = list(map(int,re.findall('\d+',rest)))
@@ -34,20 +36,36 @@ def part1():
 			total_adjacent += 1
 	return total_adjacent
 
-def bfs_paths(state, start, goal,successors):
-	queue = [(state, [start])]
-	explored = set()
-	while queue:
-		(state, path) = queue.pop(0)
-		hashable_state = frozenset(map(tuple,state))
-		# print(hashable_state)
-		if hashable_state not in explored:
-			explored.add(hashable_state)
-			for state,action in successors(state).items():
-				if isgoal(state):
-					return path + [action]
-				else:
-					queue.append((state, path + [action]))
+def astar(startstate,goal,successors,heuristic):
+	startstate = frozenset(startstate)
+	frontier = [(0,startstate)]
+	parentmap = {startstate:None}
+	existing_costs = {startstate:0}
+	while frontier:
+		fcost,state = heappop(frontier)
+		if isgoal(state): 
+			print('explored states: {}'.format(len(parentmap)))
+			return construct_path(state,startstate,parentmap)
+		for newstate,action in successors(state).items():
+			newstate = frozenset(newstate)
+			new_gcost = 1 + existing_costs[state]
+			if newstate not in parentmap or existing_costs[newstate] > new_gcost:
+				heappush(frontier, (heuristic(newstate) + new_gcost, newstate))
+				existing_costs[newstate] = new_gcost
+				parentmap[newstate] = state
+	return 'failure'
+
+def construct_path(state,start,parentmap):
+	path = [state]
+	came_from = parentmap[state]
+	while came_from:
+		path = path + [came_from]
+		came_from = parentmap[came_from]
+	return path[::-1]
+
+def distance(state):
+	x,y,*_ = next(filter(lambda x: x.isgoal, state))
+	return abs(x - 0) + abs (y - 0)
 
 def isgoal(state):
 	# /dev/grid/node-x29-y0    90T   70T    20T   77%
@@ -126,4 +144,5 @@ def construct_graph(all_nodes=ALL_NODES):
 			graph[node].append(node_lookup[neighbor])
 	return graph
 
-print(len(bfs_paths(ALL_NODES,'',isgoal,successors))-1)
+print(len(astar(ALL_NODES,isgoal,successors,distance))-1)
+
