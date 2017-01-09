@@ -1,12 +1,3 @@
-"""The first floor contains a polonium generator, a thulium generator, 
-a thulium-compatible microchip, a promethium generator, 
-a ruthenium generator, a ruthenium-compatible microchip, 
-a cobalt generator, and a cobalt-compatible microchip.
-
-The second floor contains a polonium-compatible microchip and a
-promethium-compatible microchip.
-The third floor contains nothing relevant.
-The fourth floor contains nothing relevant."""
 import itertools
 from copy import deepcopy
 from heapq import heappop,heappush
@@ -22,35 +13,6 @@ state2 = frozenset([('F4',frozenset()),
                     ('F2',frozenset(['pM','PM'])),
                     ('F1',frozenset(['EE', 'pG', 'TG', 'TM', 'PG', 'RG', 'RM', 'CG', 'CM',
                                      'EG','EM','DG','DM']))])
-
-norvig_state = frozenset([('F4',frozenset()),
-                          ('F3',frozenset(['pM', 'pG', 'RM', 'RG'])),
-                          ('F2',frozenset(['SM','PM'])),
-                          ('F1',frozenset(['EE', 'TG', 'TM', 'PG', 'SG']))])#31
-
-smallstate = frozenset([('F4',frozenset()),
-                        ('F3',frozenset(['LG'])),
-                        ('F2',frozenset(['HG'])),
-                        ('F1',frozenset(['EE','HM','LM']))])  
-
-easy = frozenset([('F4',frozenset()),
-                  ('F3',frozenset(['RM'])),
-                  ('F2',frozenset()),
-                  ('F1',frozenset(['EE','RG']))])  
-
-def bfs_paths(state, start, goal,successors):
-    queue = [(state, [start])]
-    explored = set()
-    while queue:
-        (state, path) = queue.pop(0)
-        if state not in explored:
-            explored.add(state)
-            for state,action in successors(state).items():
-                if isgoal(state):
-                    print('explored states: {}'.format(len(explored)))
-                    return path + [action]
-                else:
-                    queue.append((state, path + [action]))
 
 def astar(startstate,goal,successors,heuristic):
     frontier = [(0,startstate)]
@@ -79,7 +41,6 @@ def construct_path(state,start,parentmap):
 
 def distance(state):
     state = dict([(k,list(v)) for k,v in state])
-    # total_items = len([el for lst in state.values() for el in lst])
     dist = sum([len(items) * int(floor[1]) for floor,items in state.items()])
     return dist
 
@@ -107,10 +68,9 @@ def successors(state):
     curfloor = elevator_location(state)
     items = state[curfloor]
     items_to_move = valid_pairs(items)
-    # print(items_to_move)
     neighbors = neighbor_floors(curfloor)
     succ = {}
-    for item in items_to_move: #tup or single chip
+    for item in items_to_move: #either a pair or chip alone
         for nfloor in neighbors:
             #move item from cur floor to neighbor floor if no conflict, that is a new state with
             #item removed from cur floor, add to neighbor floor, do same for elevator
@@ -122,7 +82,9 @@ def successors(state):
 
 def update_state(state,curfloor,item,nfloor):
     newstate = {}
-    if isinstance(item,str): item = item, #force single element (strings) to tuple so that calling list() doesn't split items (TG -> T,G)
+    #force single element (strings) to tuple so that calling list() doesn't
+    #split items (TG -> T,G)
+    if isinstance(item,str): item = item, 
     new_curfloor = list(filter(lambda x: x not in list(item)+['EE'],
         state[curfloor]))
     new_neighborfloor = ['EE'] + state[nfloor] + list(item)
@@ -159,8 +121,6 @@ def no_conflict(items_moving,neighboritems):
         return all(c[0] + 'G' in combined_floor for c in chips)
     return True
 
-# path = bfs_paths(state1,'F1',isgoal,successors)
-# print(len(path)-1)
 # import cProfile
 # cProfile.run('astar(state1, isgoal, successors, distance)')
 path = astar(state1, isgoal, successors, distance)
