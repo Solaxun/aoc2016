@@ -1,15 +1,24 @@
 import re
 import itertools
 from collections import namedtuple,defaultdict
-NODES  = open('AoC22.txt').read().split('\n')[2:]
+# NODES  = open('AoC22.txt').read().split('\n')[2:]
+NODES = """/dev/grid/node-x0-y0   10T    8T     2T   80%
+/dev/grid/node-x0-y1   11T    6T     5T   54%
+/dev/grid/node-x0-y2   32T   28T     4T   87%
+/dev/grid/node-x1-y0    9T    7T     2T   77%
+/dev/grid/node-x1-y1    8T    0T     8T    0%
+/dev/grid/node-x1-y2   11T    7T     4T   63%
+/dev/grid/node-x2-y0   10T    6T     4T   60%
+/dev/grid/node-x2-y1    9T    8T     1T   88%
+/dev/grid/node-x2-y2    9T    6T     3T   66%""".split('\n')
 
-Node = namedtuple('Node',['x','y','size','used_tb','avail','used_pct'])
+Node = namedtuple('Node',['x','y','size','used_tb','avail','used_pct','isgoal'])
 
-def make_node(text):
+def make_node(text,goalcoords=(2,0)):
 	x,y = map(lambda x: int(x[1:]),re.findall('[xy]\d+',text))
 	rest = ' '.join(text.split()[1:])
 	rest_nums = list(map(int,re.findall('\d+',rest)))
-	node = Node(*[x,y]+rest_nums)
+	node = Node(*[x,y]+rest_nums+[True if goalcoords == (x,y) else False])
 	return node
 
 ALL_NODES = list(map(make_node,NODES))
@@ -30,9 +39,10 @@ def bfs_paths(state, start, goal,successors):
 	explored = set()
 	while queue:
 		(state, path) = queue.pop(0)
-		state_tup = frozenset(map(tuple,state))
-		if state_tup not in explored:
-			explored.add(state_tup)
+		hashable_state = frozenset(map(tuple,state))
+		# print(hashable_state)
+		if hashable_state not in explored:
+			explored.add(hashable_state)
 			for state,action in successors(state).items():
 				if isgoal(state):
 					return path + [action]
@@ -42,9 +52,10 @@ def bfs_paths(state, start, goal,successors):
 def isgoal(state):
 	# /dev/grid/node-x29-y0    90T   70T    20T   77%
 	# /dev/grid/node-x0-y0     85T   64T    21T   75%
-	target_node = [node for node in state if (node.x,node.y) == (29,0)][0]
+	# target_node = [node for node in state if (node.x,node.y) == (2,0)][0] #29
 	start_node = [node for node in state if (node.x,node.y) == (0,0)][0]
-	return start_node.used_tb == 64 and target_node.used_tb == 0
+	return start_node.isgoal
+	# return start_node.used_tb == 6 and target_node.used_tb == 0 #64/0
 
 def successors(state):
 	#state is list of nodes
@@ -68,7 +79,12 @@ def update_state(statedict,node,neighbor):
 	nodelist = list(node)
 	neighborlist = list(neighbor)
 	neighborlist[4] -= node.used_tb #index 4 is avail
+	neighborlist[3] += node.used_tb
 	nodelist[3] = 0 #index 3 is used
+	nodelist[4] += node.used_tb #6 is goal
+	if node.isgoal:
+		nodelist[6] = False
+		neighborlist[6] = True
 	newnode = Node(*nodelist)
 	newneighbor = Node(*neighborlist)
 	statedict[newneighbor.x,newneighbor.y] = newneighbor
@@ -110,4 +126,4 @@ def construct_graph(all_nodes=ALL_NODES):
 			graph[node].append(node_lookup[neighbor])
 	return graph
 
-print(bfs_paths(ALL_NODES,'',isgoal,successors))
+print(len(bfs_paths(ALL_NODES,'',isgoal,successors))-1)
