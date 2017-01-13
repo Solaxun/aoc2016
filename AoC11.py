@@ -1,6 +1,7 @@
 import itertools
 from copy import deepcopy
 from heapq import heappop,heappush
+from collections import deque
 import math
 
 state1 = frozenset([('F4',frozenset()),
@@ -30,6 +31,23 @@ def astar(startstate,goal,successors,heuristic):
                 existing_costs[newstate] = new_gcost
                 parentmap[newstate] = state
     return 'failure'
+
+def bfs_paths(state, start, goal,successors):
+    queue = deque([(state, [start])])
+    explored = set()
+    all_paths = []
+    while queue:
+        (state, path) = queue.popleft()
+        if state not in explored:
+            explored.add(state)
+            for state,action in successors(state).items():
+                if isgoal(state):
+                    print('explored: {}'.format(len(explored)))
+                    # print(path)
+                    # print(state)
+                    return path + [action]
+                else:
+                    queue.append((state, path + [action]))
 
 def construct_path(state,start,parentmap):
     path = [state]
@@ -74,7 +92,7 @@ def successors(state):
         for nfloor in neighbors:
             #move item from cur floor to neighbor floor if no conflict, that is a new state with
             #item removed from cur floor, add to neighbor floor, do same for elevator
-            if no_conflict(item,state[nfloor]):
+            if no_conflict(item,items,state[nfloor]):
                 new_state = update_state(state,curfloor,item,nfloor)
                 hashable_ns = frozenset([(k,frozenset(v)) for k,v in new_state.items()])
                 succ[hashable_ns] = '{} items: {} -> {}'.format(curfloor,item,nfloor)
@@ -110,18 +128,28 @@ def valid_pairs(items):
     single_gen = list(filter(lambda x: x.endswith('G'),items))
     return valid + single_chips + single_gen
 
-def no_conflict(items_moving,neighboritems):
+def no_conflict(items_moving,currentitems,neighboritems):
     #items can be neutral pair, two chips, or one chip
     #floor might have gens, no gens, no items
     if isinstance(items_moving,str): items_moving = items_moving,
-    combined_floor = list(items_moving) + neighboritems
-    gen_in_floor = any(filter(lambda x: x.endswith('G'),combined_floor))
-    if gen_in_floor:
-        chips = filter(lambda x: x.endswith('M'),combined_floor)
-        return all(c[0] + 'G' in combined_floor for c in chips)
+    nfloor_items = set(neighboritems) | set(items_moving) 
+    oldfloor_items = set(currentitems) - set(items_moving)
+    def has_gen(floor):      return any(filter(lambda x: x.endswith('G'),floor))
+    def get_chips(floor):    return filter(lambda x: x.endswith('M'),floor)
+    def gens_matched(floor): return all(c[0] + 'G' in floor for c in get_chips(floor))
+    for f in [nfloor_items,oldfloor_items]:
+        if has_gen(f):
+            if not gens_matched(f):
+                return False
     return True
 
 # import cProfile
 # cProfile.run('astar(state1, isgoal, successors, distance)')
-path = astar(state1, isgoal, successors, distance)
+path = astar(state2, isgoal, successors, distance)
 print(len(path)-1)
+# path = bfs_paths(state1,'begin', isgoal, successors) #OBOB, if we exclude start state by subtracting 1, it's one short?
+# print(len(path)-1)                                   #fixed next morning: needed to return path + [action] for  bfs, not
+#                                                      #just path.  This is bc you checked goal when enqueing, not dequeing.
+
+
+
