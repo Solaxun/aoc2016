@@ -9,7 +9,7 @@ def astar(startstate,goal,successors,heuristic):
     parentmap = {startstate:None}
     existing_costs = {startstate:0}
     while frontier:
-        fcost,state = heappop(frontier)
+        fcost, state = heappop(frontier)
         if isgoal(state): 
             print('explored states: {}'.format(len(parentmap)))
             return construct_path(state,startstate,parentmap)
@@ -19,7 +19,7 @@ def astar(startstate,goal,successors,heuristic):
                 heappush(frontier, (heuristic(newstate) + new_gcost, newstate))
                 existing_costs[newstate] = new_gcost
                 parentmap[newstate] = state
-    return 'failure'
+    return 'failure\nexplored: {}\nfrontier: {}'.format(len(parentmap),frontier)
 
 def construct_path(state,start,parentmap):
     path = [state]
@@ -30,13 +30,15 @@ def construct_path(state,start,parentmap):
     return path[::-1]
 
 def distance(state):
-    numlocs = get_num_locs(state)
-    x1,y1 = numlocs['0']
-    nonzero = {loc for num,loc in numlocs.items() if num != '0'}
+    loc, nums_remaining = state
+    x1, y1 = loc
+    numlocs = get_num_locs(PUZZLE)
+    nonzero = {loc for num,loc in numlocs.items() if num in nums_remaining}
+    if not nonzero: nonzero = 0
     closest_number = min([abs(x1 - x2) + abs(y1 - y2) for x2,y2 in nonzero])
     return closest_number
 
-def get_num_locs(state):
+def get_num_locs(state=PUZZLE):
     num_locs = {}
     for i in range(len(state)):
         for j in range(len(state[0])):
@@ -45,32 +47,38 @@ def get_num_locs(state):
     return num_locs
 
 def isgoal(state):
-    nonzero = set(get_num_locs(state)) - set('0')
-    return not nonzero #no nonzero numbers remaining
+    _ , nums_to_visit = state
+    return not(nums_to_visit)
 
-def inbounds(x,y,state):
+def inbounds(x,y,state=PUZZLE):
     return 0 <= x < len(state) and 0 <= y < len(state[0]) and state[x][y] != '#'
 
 def successors(state):
     #double check successor func.. make sure states are returned correctly
     #with the zero in the right spot and old spot replaced w/ dot
-    state = list(map(list,state))
+    cur_loc, nums_to_visit = state
     succ = {}
     movements = [(0,1),(1,0),(0,-1),(-1,0)]
-    number_locations = get_num_locs(state)
-    x,y = number_locations['0']
-    state[x][y] = '.'
-    other_locs = {loc for num,loc in number_locations.items() if num != '0'}
+    x,y = cur_loc
+    num_locations = get_num_locs(PUZZLE)
     for m in movements:
         newx,newy = vector_add(m,(x,y))
-        if inbounds(newx,newy,state):
-            state_copy = deepcopy(state)
-            state_copy[newx][newy] = '0'
-            succ[tuple(map(tuple,state_copy))] = '{} -> {}'.format((x,y),(newx,newy))
+        if inbounds(newx,newy,state=PUZZLE):
+            #if newcoords are a nonzero number, remove from numstovisit and update state
+            if (newx,newy) in num_locations.values():
+                nums_to_visit = (set(nums_to_visit) - 
+                                 set({num for num,loc in num_locations.items()
+                                 if loc == (newx,newy)}))
+            state = ((newx,newy),frozenset(nums_to_visit))
+            succ[state] = '{} -> {}'.format((x,y),(newx,newy))
     return succ
 
 def vector_add(x,y):
     return list(map(sum,(zip(x,y))))
 
-print(astar(PUZZLE,isgoal,successors,distance))
+numlocs = get_num_locs(PUZZLE)
+startloc = numlocs['0']
+nums_to_visit = frozenset(set(numlocs) - set('0'))
+print(astar((startloc,nums_to_visit),isgoal,successors,distance))
+
 
