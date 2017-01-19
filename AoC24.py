@@ -34,11 +34,7 @@ def distance(state):
     x1, y1 = loc
     numlocs = get_num_locs(PUZZLE)
     nonzero = {loc for num,loc in numlocs.items() if num in nums_remaining}
-<<<<<<< HEAD
-    if not nonzero: nonzero = 0
-=======
     if not nonzero: return 0
->>>>>>> 40a5465e11e8bb65eba8f0130632c8373c783f69
     closest_number = min([abs(x1 - x2) + abs(y1 - y2) for x2,y2 in nonzero])
     return closest_number
 
@@ -70,19 +66,15 @@ def successors(state):
         if inbounds(newx,newy,state=PUZZLE):
             #if newcoords are a nonzero number, remove from numstovisit and update state
             if (newx,newy) in num_locations.values():
-<<<<<<< HEAD
                 nums_to_visit = (set(nums_to_visit) - 
                                  set({num for num,loc in num_locations.items()
                                  if loc == (newx,newy)}))
-            state = ((newx,newy),frozenset(nums_to_visit))
-=======
                 remaining_nums_to_visit = (set(nums_to_visit) - 
                                            set({num for num,loc in num_locations.items()
                                            if loc == (newx,newy)}))
             else:
                 remaining_nums_to_visit = nums_to_visit
             state = ((newx,newy),frozenset(remaining_nums_to_visit))
->>>>>>> 40a5465e11e8bb65eba8f0130632c8373c783f69
             succ[state] = '{} -> {}'.format((x,y),(newx,newy))
     return succ
 
@@ -92,13 +84,11 @@ def vector_add(x,y):
 numlocs = get_num_locs(PUZZLE)
 startloc = numlocs['0']
 nums_to_visit = frozenset(set(numlocs) - set('0'))
-<<<<<<< HEAD
 print(astar((startloc,nums_to_visit),isgoal,successors,distance))
-=======
 path = astar((startloc,nums_to_visit),isgoal,successors,distance)
 for p in path:
     print(p)
 print(len(path)-1)
->>>>>>> 40a5465e11e8bb65eba8f0130632c8373c783f69
+
 
 
