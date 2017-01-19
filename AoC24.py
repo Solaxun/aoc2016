@@ -66,9 +66,6 @@ def successors(state):
         if inbounds(newx,newy,state=PUZZLE):
             #if newcoords are a nonzero number, remove from numstovisit and update state
             if (newx,newy) in num_locations.values():
-                nums_to_visit = (set(nums_to_visit) - 
-                                 set({num for num,loc in num_locations.items()
-                                 if loc == (newx,newy)}))
                 remaining_nums_to_visit = (set(nums_to_visit) - 
                                            set({num for num,loc in num_locations.items()
                                            if loc == (newx,newy)}))
@@ -83,12 +80,10 @@ def vector_add(x,y):
 
 numlocs = get_num_locs(PUZZLE)
 startloc = numlocs['0']
+
 nums_to_visit = frozenset(set(numlocs) - set('0'))
 print(astar((startloc,nums_to_visit),isgoal,successors,distance))
 path = astar((startloc,nums_to_visit),isgoal,successors,distance)
 for p in path:
     print(p)
 print(len(path)-1)
-
-
-
